@@ -1,7 +1,7 @@
 name: Scan jre/8 Docker image
 
 on:
-  push:
+  pull_request:
     paths:
       - jre/8/**
   schedule:
