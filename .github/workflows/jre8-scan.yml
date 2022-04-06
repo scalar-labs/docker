@@ -1,11 +1,9 @@
 name: Scan jre/8 Docker image
 
 on:
-  pull_request:
-    branches:
-    - master
+  push:
     paths:
-    - jre/8/**
+      - jre/8/**
   schedule:
   - cron: "0 0 * * 3" # every Wednesday
 
