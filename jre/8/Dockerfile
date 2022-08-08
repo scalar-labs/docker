@@ -12,4 +12,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gzip=1.10-4+deb11u1 \
     liblzma5=5.2.5-2.1~deb11u1 \
     dpkg=1.20.10 \
+    libtirpc-common=1.3.1-1+deb11u1 \
+    libtirpc3=1.3.1-1+deb11u1 \
     && rm -rf /var/lib/apt/lists/*
