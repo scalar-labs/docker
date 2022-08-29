@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl1.1=1.1.1n-0+deb11u3 \
     openssl=1.1.1n-0+deb11u3 \
     libgmp10=2:6.2.1+dfsg-1+deb11u1 \
-    zlib1g=1:1.2.11.dfsg-2+deb11u1 \
+    zlib1g=1:1.2.11.dfsg-2+deb11u2 \
     gzip=1.10-4+deb11u1 \
     liblzma5=5.2.5-2.1~deb11u1 \
     dpkg=1.20.10 \
