@@ -14,4 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dpkg=1.20.10 \
     libtirpc-common=1.3.1-1+deb11u1 \
     libtirpc3=1.3.1-1+deb11u1 \
+    libc-bin=2.31-13+deb11u4 \
+    libc6=2.31-13+deb11u4 \
+    libpcre2-8-0=10.36-2+deb11u1 \
     && rm -rf /var/lib/apt/lists/*
