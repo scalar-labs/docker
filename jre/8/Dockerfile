@@ -17,4 +17,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libc-bin=2.31-13+deb11u4 \
     libc6=2.31-13+deb11u4 \
     libpcre2-8-0=10.36-2+deb11u1 \
+    libtasn1-6=4.16.0-2+deb11u1 \
     && rm -rf /var/lib/apt/lists/*
