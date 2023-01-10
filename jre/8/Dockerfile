@@ -18,4 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libc6=2.31-13+deb11u5 \
     libpcre2-8-0=10.36-2+deb11u1 \
     libtasn1-6=4.16.0-2+deb11u1 \
+    libdb5.3=5.3.28+dfsg1-0.8 \
+    libgssapi-krb5-2=1.18.3-6+deb11u3 \
+    libk5crypto3=1.18.3-6+deb11u3 \
+    libkrb5-3=1.18.3-6+deb11u3 \
+    libkrb5support0=1.18.3-6+deb11u3 \
     && rm -rf /var/lib/apt/lists/*
