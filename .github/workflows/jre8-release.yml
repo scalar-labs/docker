@@ -40,6 +40,7 @@ jobs:
 
       - name: Rebuild image for multiple platforms and push Docker image
         run: |
-          docker buildx create --use
+          docker buildx create --name mybuilder --use
           docker buildx build -t ghcr.io/scalar-labs/jre8:${{ steps.version.outputs.version }} --platform linux/amd64,linux/arm64/v8 --push ./jre/8
+          docker buildx rm mybuilder
 
