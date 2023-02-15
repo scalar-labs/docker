@@ -1,0 +1,22 @@
+name: (Test) Build by CLI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Check out codes
+        uses: actions/checkout@v2
+
+      - name: Rebuild image for multiple platforms and push Docker image
+        run: |
+          docker buildx create --name mybuilder --use
+          docker buildx build -t ghcr.io/scalar-labs/jre8:test --platform linux/amd64,linux/arm64/v8 ./jre/8
+          docker buildx rm mybuilder
+
