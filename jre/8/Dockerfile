@@ -3,7 +3,7 @@ FROM openjdk:8u322-jre-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     liblz4-1=1.9.3-2 \
     libgcrypt20=1.8.7-6 \
-    libgnutls30=3.7.1-5+deb11u2 \
+    libgnutls30=3.7.1-5+deb11u3 \
     libhogweed6=3.7.3-1 \
     libssl1.1=1.1.1n-0+deb11u4 \
     openssl=1.1.1n-0+deb11u4 \
