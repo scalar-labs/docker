@@ -1,0 +1,77 @@
+name: Build and push the Docker images for JDK 8
+
+on:
+  push:
+    tags:
+      - "jdk8-[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  release-jdk8:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set version
+        id: version
+        run: |
+          VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/jdk8-##g")
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Check out codes
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Build and push the image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./jdk/8
+          push: true
+          tags: ghcr.io/scalar-labs/jdk8:${{ steps.version.outputs.version }}
+          platforms: linux/amd64,linux/arm64/v8
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+  release-jdk8-postgres15:
+    needs: release-jdk8
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out codes
+        uses: actions/checkout@v2
+
+      - name: Check out codes
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Build and push the image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./jdk-postgres/8-15
+          push: true
+          tags: ghcr.io/scalar-labs/jdk8-postgres15:${{ needs.release-jdk8.outputs.version }}
+          platforms: linux/amd64,linux/arm64/v8
