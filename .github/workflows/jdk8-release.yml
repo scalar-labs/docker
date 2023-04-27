@@ -50,9 +50,6 @@ jobs:
 
     steps:
       - name: Check out codes
-        uses: actions/checkout@v2
-
-      - name: Check out codes
         uses: actions/checkout@v3
 
       - name: Set up QEMU
