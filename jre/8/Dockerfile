@@ -23,4 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libk5crypto3=1.18.3-6+deb11u3 \
     libkrb5-3=1.18.3-6+deb11u3 \
     libkrb5support0=1.18.3-6+deb11u3 \
+    libtinfo6=6.2+20201114-2+deb11u1 \
+    ncurses-base=6.2+20201114-2+deb11u1 \
+    ncurses-bin=6.2+20201114-2+deb11u1 \
     && rm -rf /var/lib/apt/lists/*
