@@ -3,7 +3,9 @@
 # https://github.com/docker-library/postgres/blob/1f5d48fa85938d91a757f95b01069fe3f68c46bc/15/bullseye/Dockerfile
 #
 
-FROM ghcr.io/scalar-labs/jdk8:1.0.2
+ARG BASE_IMAGE_VERSION
+
+FROM ghcr.io/scalar-labs/jdk8:${BASE_IMAGE_VERSION}
 
 # explicitly set user/group IDs
 RUN set -eux; \
