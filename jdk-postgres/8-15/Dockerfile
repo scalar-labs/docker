@@ -1,19 +1,9 @@
 #
 # NOTE: This dockerfile is based on the official postgres dockerfile
-# See https://github.com/docker-library/postgres
+# https://github.com/docker-library/postgres/blob/1f5d48fa85938d91a757f95b01069fe3f68c46bc/15/bullseye/Dockerfile
 #
 
 FROM ghcr.io/scalar-labs/jdk8:1.0.0
-
-RUN set -ex; \
-	if ! command -v gpg > /dev/null; then \
-		apt-get update; \
-		apt-get install -y --no-install-recommends \
-			gnupg \
-			dirmngr \
-		; \
-		rm -rf /var/lib/apt/lists/*; \
-	fi
 
 # explicitly set user/group IDs
 RUN set -eux; \
@@ -24,6 +14,13 @@ RUN set -eux; \
 # see https://github.com/docker-library/postgres/issues/274
 	mkdir -p /var/lib/postgresql; \
 	chown -R postgres:postgres /var/lib/postgresql
+
+RUN set -ex; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		gnupg \
+	; \
+	rm -rf /var/lib/apt/lists/*
 
 # grab gosu for easy step-down from root
 # https://github.com/tianon/gosu/releases
@@ -80,13 +77,13 @@ RUN set -ex; \
 	mkdir -p /usr/local/share/keyrings/; \
 	gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key"; \
 	gpg --batch --export --armor "$key" > /usr/local/share/keyrings/postgres.gpg.asc; \
-	command -v gpgconf > /dev/null && gpgconf --kill all; \
+	gpgconf --kill all; \
 	rm -rf "$GNUPGHOME"
 
 ENV PG_MAJOR 15
 ENV PATH $PATH:/usr/lib/postgresql/$PG_MAJOR/bin
 
-ENV PG_VERSION 15.2-1.pgdg110+1
+ENV PG_VERSION 15.3-1.pgdg110+1
 
 RUN set -ex; \
 	\
@@ -96,7 +93,7 @@ RUN set -ex; \
 	dpkgArch="$(dpkg --print-architecture)"; \
 	aptRepo="[ signed-by=/usr/local/share/keyrings/postgres.gpg.asc ] http://apt.postgresql.org/pub/repos/apt/ bullseye-pgdg main $PG_MAJOR"; \
 	case "$dpkgArch" in \
-		amd64 | arm64 | ppc64el) \
+		amd64 | arm64 | ppc64el | s390x) \
 # arches officialy built by upstream
 			echo "deb $aptRepo" > /etc/apt/sources.list.d/pgdg.list; \
 			apt-get update; \
