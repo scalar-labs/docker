@@ -72,5 +72,5 @@ jobs:
           push: true
           tags: ghcr.io/scalar-labs/jdk8-postgres15:${{ needs.release-jdk8.outputs.version }}
           platforms: linux/amd64,linux/arm64/v8
-          build-args:
-            - BASE_IMAGE_VERSION=${{ needs.release-jdk8.outputs.version }}
+          build-args: |
+            BASE_IMAGE_VERSION=${{ needs.release-jdk8.outputs.version }}
