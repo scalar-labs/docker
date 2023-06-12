@@ -13,9 +13,21 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.CR_PAT }}
 
     - name: Build the Docker image locally for scanning
-      run: docker build ./jdk-postgres/8-15 -t can_be_removed
+      run: |
+        LAST_JDK8_VERSION=$(git tag | grep jdk8 | sed 's/jdk8-//g' | sort -r --version-sort | head -n 1)
+        echo "Scan with the base image version: $LAST_JDK8_VERSION"
+        docker build ./jdk-postgres/8-15 --build-arg BASE_IMAGE_VERSION="$LAST_JDK8_VERSION" -t can_be_removed
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
