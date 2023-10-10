@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dpkg=1.20.10 \
     libtirpc-common=1.3.1-1+deb11u1 \
     libtirpc3=1.3.1-1+deb11u1 \
-    libc-bin=2.31-13+deb11u5 \
-    libc6=2.31-13+deb11u5 \
+    libc-bin=2.31-13+deb11u7 \
+    libc6=2.31-13+deb11u7 \
     libpcre2-8-0=10.36-2+deb11u1 \
     libtasn1-6=4.16.0-2+deb11u1 \
     libdb5.3=5.3.28+dfsg1-0.8 \
@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libk5crypto3=1.18.3-6+deb11u3 \
     libkrb5-3=1.18.3-6+deb11u3 \
     libkrb5support0=1.18.3-6+deb11u3 \
-    libtinfo6=6.2+20201114-2+deb11u1 \
-    ncurses-base=6.2+20201114-2+deb11u1 \
-    ncurses-bin=6.2+20201114-2+deb11u1 \
+    libtinfo6=6.2+20201114-2+deb11u2 \
+    ncurses-base=6.2+20201114-2+deb11u2 \
+    ncurses-bin=6.2+20201114-2+deb11u2 \
     && rm -rf /var/lib/apt/lists/*
