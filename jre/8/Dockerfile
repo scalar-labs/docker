@@ -26,4 +26,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtinfo6=6.2+20201114-2+deb11u2 \
     ncurses-base=6.2+20201114-2+deb11u2 \
     ncurses-bin=6.2+20201114-2+deb11u2 \
+    perl-base=5.32.1-4+deb11u3 \
     && rm -rf /var/lib/apt/lists/*
