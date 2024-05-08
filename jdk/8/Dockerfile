@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dpkg=1.20.10 \
     libtirpc-common=1.3.1-1+deb11u1 \
     libtirpc3=1.3.1-1+deb11u1 \
-    libc-bin=2.31-13+deb11u7 \
-    libc6=2.31-13+deb11u7 \
+    libc-bin=2.31-13+deb11u10 \
+    libc6=2.31-13+deb11u10 \
     libpcre2-8-0=10.36-2+deb11u1 \
     libtasn1-6=4.16.0-2+deb11u1 \
     libdb5.3=5.3.28+dfsg1-0.8 \
