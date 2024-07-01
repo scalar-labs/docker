@@ -1,7 +1,7 @@
-# Docker images containing installer for Oracle JDK 8 and 9 on Linux and Windows
+# Docker images containing installer for Oracle JDK 8 and 11 on Linux and Windows
 
-This folder contains Dockerfiles to build images that contain Oracle JDK 8 or 9 installer for Linux and Windows.
-Their purpose is to install Oracle JDK 8 and 9 on the GitHub action runner. 
+This folder contains Dockerfiles to build images that contain Oracle JDK 8 or 11 installer for Linux and Windows.
+Their purpose is to help install Oracle JDK 8 and 11 on the GitHub action runner. 
 The runner will create the image containing the JDK installer and copy it locally for installation after which the started image is discarded.
 For example, an Ubuntu runner will do the following steps to retrieve JDK 8 installer:
 
@@ -19,8 +19,8 @@ They were selected solely because their memory footprint is very light: about 5M
 ### Download the JDK installer
 
 Download the installer from [Oracle website](https://www.oracle.com/java/technologies/downloads/archive/#JavaSE). An Oracle account (registration is free) is needed.
-- For Linux, download the `Linux x64 Compressed Archive` for Oracle JDK 8 and 9.
-- For Windows, download the `Windows x64 Installer` for Oracle JDK 8 and 9.
+- For Linux, download the `Linux x64 Compressed Archive` for Oracle JDK 8 and 11.
+- For Windows, download the `Windows x64 Installer` for Oracle JDK 8 and 11.
 
 Then put the downloaded files in the corresponding directories with the Dockerfile
 
@@ -35,7 +35,7 @@ Run the following commands to build the Linux images
  docker build -t ghcr.io/scalar-labs/oracle/jdk:8-linux -t ghcr.io/scalar-labs/oracle/jdk:8u401-linux ./linux/8
  ```
 
-##### For JDK 9
+##### For JDK 11
 
 ```bash
  docker build -t ghcr.io/scalar-labs/oracle/jdk:11-linux -t ghcr.io/scalar-labs/oracle/jdk:11.0.22-linux ../linux/11
