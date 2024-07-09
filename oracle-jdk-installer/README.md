@@ -43,7 +43,7 @@ Run the following commands to build the Linux images
 
 #### For Windows
 
-These builds steps are directly taken from base image `mcr.microsoft.com/oss/kubernetes/windows-host-process-containers-base-image:v1.0.0` [GitHub repository](https://github.com/microsoft/windows-host-process-containers-base-image?tab=readme-ov-file#build-with-buildkit).
+These builds steps are directly taken from the base image `mcr.microsoft.com/oss/kubernetes/windows-host-process-containers-base-image` [GitHub repository](https://github.com/microsoft/windows-host-process-containers-base-image?tab=readme-ov-file#build-with-buildkit).
 
 To be able to build a Windows image on a Linux machine, we need to create a specific build environment.
 
@@ -67,6 +67,3 @@ docker buildx build --platform windows/amd64 --output=type=registry -t ghcr.io/s
 ```bash
 docker buildx build --platform windows/amd64 --output=type=registry -t ghcr.io/scalar-labs/oracle/jdk:11-windows -t ghcr.io/scalar-labs/oracle/jdk:11.0.22-windows ./windows/11
 ```
-
-
-
