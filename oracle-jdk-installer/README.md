@@ -6,7 +6,7 @@ The runner will create the image containing the JDK installer and copy it locall
 For example, an Ubuntu runner will do the following steps to retrieve JDK 8 installer:
 
 ```bash
-container_id=$(docker create "ghcr.io/scalar-labs/oracle/jdk:8")  
+container_id=$(docker create "ghcr.io/scalar-labs/oracle/jdk:8-linux")  
 docker cp "$container_id:oracle-jdk-8.tar.gz" "./oracle-jdk-8.tar.gz"  
 docker rm "$container_id"
 //Continue with the JDK installation
