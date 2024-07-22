@@ -19,10 +19,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpcre2-8-0=10.36-2+deb11u1 \
     libtasn1-6=4.16.0-2+deb11u1 \
     libdb5.3=5.3.28+dfsg1-0.8 \
-    libgssapi-krb5-2=1.18.3-6+deb11u3 \
-    libk5crypto3=1.18.3-6+deb11u3 \
-    libkrb5-3=1.18.3-6+deb11u3 \
-    libkrb5support0=1.18.3-6+deb11u3 \
+    libgssapi-krb5-2=1.18.3-6+deb11u5 \
+    libk5crypto3=1.18.3-6+deb11u5 \
+    libkrb5-3=1.18.3-6+deb11u5 \
+    libkrb5support0=1.18.3-6+deb11u5 \
     libtinfo6=6.2+20201114-2+deb11u2 \
     ncurses-base=6.2+20201114-2+deb11u2 \
     ncurses-bin=6.2+20201114-2+deb11u2 \
