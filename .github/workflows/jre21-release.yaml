@@ -1,0 +1,21 @@
+name: Build and push the Temurin based JRE 21 image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - jre/21/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    uses: ./.github/workflows/jre-release-reusable.yaml
+    with:
+      image-name: jre21
+      context: ./jre/21
+    secrets:
+      CR_PAT: ${{ secrets.CR_PAT }}

@@ -1,0 +1,115 @@
+name: Update the packages pinned in the UBI based images
+# Dependabot cannot detect the versions of the RPM packages that `microdnf install` pins in
+# jre-ubi/*/Dockerfile. This workflow looks for newer versions of them and creates a pull request
+# in the same way as Dependabot does.
+#
+# The branch is pushed and the pull request is created with a PAT (GH_PR_PAT) instead of
+# GITHUB_TOKEN, because the events caused by GITHUB_TOKEN do not trigger other workflows. With the
+# PAT, the CI (jre-ci.yaml) runs in the pull request as it does in the ones of Dependabot.
+
+on:
+  schedule:
+    # Runs at 9:00 AM JST (Tokyo time) every Monday, which is the same schedule as Dependabot.
+    # JST is UTC+9, so 9:00 AM JST = 0:00 AM UTC.
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-ubi-packages:
+    name: Update the packages pinned in jre-ubi/${{ matrix.java-version }}/Dockerfile
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version:
+          - "21"
+          - "25"
+
+    concurrency:
+      group: update-ubi-packages-${{ github.ref_name }}-${{ matrix.java-version }}
+      cancel-in-progress: false
+
+    env:
+      DIRECTORY: jre-ubi/${{ matrix.java-version }}
+      DOCKERFILE: jre-ubi/${{ matrix.java-version }}/Dockerfile
+      BASE_BRANCH: ${{ github.ref_name }}
+      PR_BRANCH: update-ubi-packages/${{ github.ref_name }}/jre-ubi-${{ matrix.java-version }}
+      GH_TOKEN: ${{ secrets.GH_PR_PAT }}
+
+    steps:
+      # Check out with the PAT so that `git push` also uses it.
+      - name: Check out codes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.GH_PR_PAT }}
+
+      - name: Update the pinned packages to the latest versions
+        id: update
+        run: |
+          updates=$(bash ci/update_ubi_packages.sh "$DOCKERFILE")
+          if [[ -z "$updates" ]]; then
+            echo "All the pinned packages are up to date."
+            exit 0
+          fi
+
+          count=$(wc -l <<<"$updates")
+          if [[ "$count" -eq 1 ]]; then
+            read -r name old new <<<"$updates"
+            title="Bump ${name} from ${old} to ${new} in /${DIRECTORY}"
+          else
+            title="Bump ${count} packages in the UBI image in /${DIRECTORY}"
+          fi
+
+          {
+            echo "Bumps the following packages pinned in \`${DOCKERFILE}\`."
+            echo
+            echo "| Package | From | To |"
+            echo "| --- | --- | --- |"
+            awk '{ printf "| `%s` | `%s` | `%s` |\n", $1, $2, $3 }' <<<"$updates"
+            echo
+            echo "Merging this pull request into the main branch releases a new image."
+            echo
+            echo "This pull request was created by the \`${GITHUB_WORKFLOW}\` workflow."
+          } > "${RUNNER_TEMP}/pr-body.md"
+
+          {
+            echo "updated=true"
+            echo "title=${title}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create or update the pull request
+        if: steps.update.outputs.updated == 'true'
+        env:
+          TITLE: ${{ steps.update.outputs.title }}
+        run: |
+          pr_number=$(gh pr list --head "$PR_BRANCH" --base "$BASE_BRANCH" --state open --json number --jq '.[0].number')
+
+          # Do nothing if the open pull request already proposes the same content. This avoids
+          # re-triggering the CI every week.
+          if [[ -n "$pr_number" ]] && git fetch origin "$PR_BRANCH" && git diff --quiet FETCH_HEAD -- "$DOCKERFILE"; then
+            echo "Pull request #${pr_number} already proposes the same update."
+            exit 0
+          fi
+
+          # Known limitations (accepted because they are rare):
+          # - The branch is always recreated from the base branch and force-pushed, so commits
+          #   that someone pushed to the branch of the pull request are discarded. Do not push
+          #   commits to that branch.
+          # - Only open pull requests are checked, so a closed pull request is created again in
+          #   the next run if the update is still available.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$PR_BRANCH"
+          git commit -m "$TITLE" -- "$DOCKERFILE"
+          git push --force origin "$PR_BRANCH"
+
+          if [[ -n "$pr_number" ]]; then
+            gh pr edit "$pr_number" --title "$TITLE" --body-file "${RUNNER_TEMP}/pr-body.md"
+          else
+            gh pr create --base "$BASE_BRANCH" --head "$PR_BRANCH" --title "$TITLE" \
+              --body-file "${RUNNER_TEMP}/pr-body.md"
+          fi
