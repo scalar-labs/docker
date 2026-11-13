@@ -152,12 +152,14 @@ The scripts in `ci/` parse the Dockerfiles, so keep the following formats.
   - Pin the packages as `<name>-[<epoch>:]<version>-<release>`, for example `java-21-openjdk-headless-1:21.0.13.0.9-1.2.el10`. `ci/get_jre_version.sh` takes the JRE version from the OpenJDK package.
   - Pin only one OpenJDK package (`java-<version>-openjdk` or `java-<version>-openjdk-headless`).
   - Put all the packages on the same line as `microdnf install`. `ci/update_ubi_packages.sh` does not read the packages on continuation lines.
+  - Put a space on both sides of each pinned package. Do not put it at the end of a line or next to a tab. `ci/update_ubi_packages.sh` replaces only a pinned package that is surrounded by spaces.
+  - Do not write the same pinned package twice in a Dockerfile. `ci/update_ubi_packages.sh` fails at the second one when it updates the package.
   - Keep the UBI image in the first `FROM` instruction. `ci/update_ubi_packages.sh` looks for the latest packages in the repositories of the image in the first `FROM` instruction.
   - Do not remove `shadow-utils`. The products that use the image run the `useradd` command, which this package provides.
 - Keep the `ARG` instructions (`IMAGE_NAME`, `IMAGE_VERSION`, and `IMAGE_RELEASE`) and the labels that use them. The release workflow passes the values as build arguments.
 - The directory name must be the Java major version. `ci/get_jre_version.sh` fails if the JRE version in the Dockerfile is a different major version.
 
-The CI runs `ci/get_jre_version.sh` in pull requests, so a Dockerfile from which the JRE version cannot be taken is found before the merge. Nothing checks the rules for `ci/update_ubi_packages.sh` (the continuation lines and the first `FROM` instruction).
+The CI runs `ci/get_jre_version.sh` in pull requests, so a Dockerfile from which the JRE version cannot be taken is found before the merge. Nothing checks the rules for `ci/update_ubi_packages.sh` (the continuation lines, the spaces around the pinned packages, the duplicated pinned packages, and the first `FROM` instruction). A Dockerfile that breaks the rules for the pinned packages is found only when the `update-ubi-packages` workflow updates the package. See [Troubleshooting](#troubleshooting).
 
 `ci/update_ubi_packages.sh` has the following limitations.
 
@@ -225,6 +227,8 @@ The workflows cannot be run locally. `jre-ci.yaml` runs in pull requests, and th
   Check that `CR_PAT` has not expired and that it can push the package. If the run was triggered by a merge that Dependabot itself did, `CR_PAT` is empty. See [Assumptions about the operation](#assumptions-about-the-operation). After fixing the cause, run the release workflow manually on the `main` branch.
 - **The release fails with "Failed to get the JRE version" or "does not match the directory name".**
   The Dockerfile does not follow [Rules for editing the Dockerfiles](#rules-for-editing-the-dockerfiles). The CI reports the same error in the pull request, so this happens only when the pull request was merged with a failed CI.
+- **The `update-ubi-packages` workflow fails with "Failed to replace ... because it is not surrounded by spaces".**
+  The pinned package in the message does not follow [Rules for editing the Dockerfiles](#rules-for-editing-the-dockerfiles). It is at the end of a line, it is next to a tab, or it is written twice in the Dockerfile. The workflow creates no pull request for that Dockerfile, including the updates of its other packages, and it fails in every run until the Dockerfile is fixed. Put a space on both sides of the pinned package, write it only once, and then run the workflow manually.
 - **The `update-ubi-packages` workflow fails in the push of the branch or in the creation of the pull request.**
   Check that `GH_PR_PAT` has not expired and that it has the permission for this repository.
 - **The CI does not run in a pull request of the `update-ubi-packages` workflow.**

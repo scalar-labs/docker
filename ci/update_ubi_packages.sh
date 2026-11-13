@@ -117,7 +117,16 @@ for i in "${!PINS[@]}"; do
     fi
   fi
 
-  content=${content//"${pin}"/"${name}-${new}"}
+  # Replace the pin only as a whole space-delimited token so that another pin
+  # that ends with the same string (e.g., foo-bar-1.0-1 for bar-1.0-1) is not
+  # rewritten. Fail if nothing is replaced (e.g., the pin is at the end of a
+  # line) instead of reporting an update that is not applied.
+  updated=${content//" ${pin} "/" ${name}-${new} "}
+  if [[ "$updated" == "$content" ]]; then
+    echo "Failed to replace ${pin} in ${DOCKERFILE} because it is not surrounded by spaces" >&2
+    exit 1
+  fi
+  content=$updated
   echo "${name} ${current} ${new}"
 done
 
