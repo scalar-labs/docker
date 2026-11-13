@@ -1,0 +1,38 @@
+version: 2
+
+updates:
+  # Base images of the JRE images.
+  # Merging a pull request into the main branch releases a new image by the release workflows.
+  - package-ecosystem: "docker"
+    directories:
+      - "/jre/21"
+      - "/jre/25"
+      - "/jre-ubi/21"
+      - "/jre-ubi/25"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    ignore:
+      # Each directory is for one Java major version, so do not update the major version.
+      # Do not apply this rule to other images. For example, the tags of the UBI image are
+      # build numbers, so this rule would ignore all the updates of them.
+      - dependency-name: "eclipse-temurin"
+        update-types:
+          - "version-update:semver-major"
+
+  # Actions used in the workflows in .github/workflows.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    groups:
+      # Update all the actions in one pull request.
+      actions:
+        patterns:
+          - "*"
+

@@ -1,0 +1,21 @@
+name: Build and push the UBI based JRE 25 image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - jre-ubi/25/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    uses: ./.github/workflows/jre-release-reusable.yaml
+    with:
+      image-name: jre25-ubi
+      context: ./jre-ubi/25
+    secrets:
+      CR_PAT: ${{ secrets.CR_PAT }}
