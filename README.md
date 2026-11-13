@@ -66,7 +66,7 @@ Dependabot also creates a pull request that updates the actions used in the work
 
 Note the following about the pull requests.
 
-- No reviewer is assigned to them automatically. A maintainer must look for them.
+- GitHub requests a review from the code owners in [.github/CODEOWNERS](./.github/CODEOWNERS). The `reviewers` option of `.github/dependabot.yml` was removed, so the code owners are used instead. This applies to all the pull requests that change the JRE image directories or the workflows, not only the ones of Dependabot.
 - The `update-ubi-packages` workflow creates one pull request for each Java version, and it updates all the packages pinned in the Dockerfile, including `shadow-utils`. If the pull request is still open in the next run, the workflow updates it instead of creating another one.
 - The author of the pull requests of the `update-ubi-packages` workflow is the owner of `GH_PR_PAT`, so that account cannot approve them.
 - To look for the updates without waiting for Monday, run the `update-ubi-packages` workflow manually on the `main` branch, or run the check of Dependabot manually from the dependency graph of the repository. If the `update-ubi-packages` workflow is run on another branch, it creates a pull request to that branch.
@@ -174,6 +174,7 @@ Update all of the following. Nothing detects a missing one.
 4. In `.github/workflows/jre-vuln-check.yaml`, add the images to `images` and to `docker-build-command`.
 5. In `.github/workflows/update-ubi-packages.yaml`, add the Java version to the matrix.
 6. In `.github/dependabot.yml`, add the directories to `directories`.
+7. In `.github/CODEOWNERS`, add the directories.
 
 The image name must be the same in the release workflow, `jre-ci.yaml`, and `jre-vuln-check.yaml`.
 

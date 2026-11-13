@@ -1,0 +1,16 @@
+# GitHub requests a review from the code owners when a pull request changes the files below.
+#
+# This file is used to set the reviewer of the pull requests that update the JRE images, because
+# the `reviewers` option of `.github/dependabot.yml` was removed. It applies to all the pull
+# requests that change these files, not only the ones of Dependabot. For example, it also applies
+# to the pull requests of the `update-ubi-packages` workflow.
+
+# JRE images (the base images are updated by Dependabot, and the pinned RPM packages are updated
+# by the `update-ubi-packages` workflow).
+/jre/21/ @kota2and3kan
+/jre/25/ @kota2and3kan
+/jre-ubi/21/ @kota2and3kan
+/jre-ubi/25/ @kota2and3kan
+
+# Workflows (the actions are updated by Dependabot).
+/.github/workflows/ @kota2and3kan
