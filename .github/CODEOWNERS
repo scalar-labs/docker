@@ -7,10 +7,10 @@
 
 # JRE images (the base images are updated by Dependabot, and the pinned RPM packages are updated
 # by the `update-ubi-packages` workflow).
-/jre/21/ @kota2and3kan
-/jre/25/ @kota2and3kan
-/jre-ubi/21/ @kota2and3kan
-/jre-ubi/25/ @kota2and3kan
+/jre/21/ @scalar-labs/infra
+/jre/25/ @scalar-labs/infra
+/jre-ubi/21/ @scalar-labs/infra
+/jre-ubi/25/ @scalar-labs/infra
 
 # Workflows (the actions are updated by Dependabot).
-/.github/workflows/ @kota2and3kan
+/.github/workflows/ @scalar-labs/infra
