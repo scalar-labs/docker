@@ -3,7 +3,7 @@
 FROM registry.access.redhat.com/ubi10/ubi-minimal:1793835006@sha256:cc3d766e796fbb50d6fcd599f4bad4c231aeae41822c6e86e7da664a996221ca
 
 RUN microdnf update -y \
- && microdnf install java-21-openjdk-headless-1:21.0.13.0.9-1.2.el10 shadow-utils-4.15.0-13.el10 --setopt=install_weak_deps=0 --nodocs -y \
+ && microdnf install java-21-openjdk-headless-1:21.0.13.1.2-1.2.el10 shadow-utils-4.15.0-13.el10 --setopt=install_weak_deps=0 --nodocs -y \
  && microdnf clean all \
  && rm -rf /var/cache/yum
 
