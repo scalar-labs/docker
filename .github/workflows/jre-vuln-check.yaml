@@ -1,0 +1,47 @@
+name: Vulnerability Check JRE images
+
+on:
+  schedule:
+    # The configuration is in UTC. This means Monday 01:00 JST (UTC+9).
+    - cron: "0 16 * * 0"
+  workflow_dispatch:
+
+# The called workflow only checks out the codes with GITHUB_TOKEN, so it needs no write permission.
+permissions:
+  contents: read
+
+jobs:
+  call-vuln-check:
+    uses: scalar-labs/actions/.github/workflows/vuln-check-reusable.yaml@main
+    with:
+      target-ref: "main"
+      # The reusable workflow scans each image in a separate job and posts a Slack message with
+      # the name of the image, so one workflow can check all the JRE images.
+      images: |
+        [
+          ["Temurin based JRE 21", "jre21"],
+          ["Temurin based JRE 25", "jre25"],
+          ["UBI based JRE 21", "jre21-ubi"],
+          ["UBI based JRE 25", "jre25-ubi"]
+        ]
+      # The reusable workflow scans `ghcr.io/scalar-labs/<image base name>:<version>`.
+      # Since this repository has no project version, use a temporary tag only for
+      # the scan. The images with this tag are never pushed to the registry.
+      version-command: echo vuln-check
+      # This workflow scans the images built from the head of the main branch, not the released
+      # images. A new image is released when a pull request that updates the base image or the
+      # pinned packages is merged, so the released images are expected to be close to the ones
+      # built here. This assumes that those pull requests are merged without delay.
+      # Note that this cannot find a vulnerability that only a released image has. The builds
+      # update the OS packages, so if a fix is published only in the package repositories, the
+      # scan succeeds although the released image does not have the fix until the next release.
+      # Note that if one of the builds fails, the reusable workflow scans none of the images.
+      docker-build-command: |
+        docker build ./jre/21 -t ghcr.io/scalar-labs/jre21:vuln-check
+        docker build ./jre/25 -t ghcr.io/scalar-labs/jre25:vuln-check
+        docker build ./jre-ubi/21 -t ghcr.io/scalar-labs/jre21-ubi:vuln-check
+        docker build ./jre-ubi/25 -t ghcr.io/scalar-labs/jre25-ubi:vuln-check
+    # `GPR_USERNAME` and `GPR_PASSWORD` are not passed. The reusable workflow only exposes them as
+    # environment variables for Gradle builds, and the builds here use only public base images.
+    secrets:
+      SLACK_SECURITY_WEBHOOK_URL: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}

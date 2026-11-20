@@ -1,0 +1,147 @@
+name: CI for the JRE images
+# Checks the JRE images in pull requests, for example the ones that Dependabot creates to update
+# the base images. This workflow never pushes the images, so it needs no secrets. The release
+# workflows push the images after the merge.
+#
+# - build: Checks that the image tag can be decided and that the image can be built.
+# - comment: Comments the images (`<image>:<tag>`) that the release workflows will push.
+
+on:
+  pull_request:
+    paths:
+      - jre/21/**
+      - jre/25/**
+      - jre-ubi/21/**
+      - jre-ubi/25/**
+      - ci/get_jre_version.sh
+      - .github/workflows/jre-ci.yaml
+
+permissions:
+  contents: read
+
+# Cancel the old run of the same pull request.
+concurrency:
+  group: jre-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.context }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        context:
+          - jre/21
+          - jre/25
+          - jre-ubi/21
+          - jre-ubi/25
+
+    steps:
+      - name: Check out codes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The release workflow uses the same script to decide the image tag. Run it here so that a
+      # Dockerfile from which the JRE version cannot be taken is found before the merge.
+      - name: Check that the JRE version can be taken from the Dockerfile
+        run: bash ci/get_jre_version.sh "${{ matrix.context }}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # Build for the same platforms as the release workflows.
+      - name: Build the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./${{ matrix.context }}
+          push: false
+          platforms: linux/amd64,linux/arm64/v8
+
+  comment:
+    name: Comment the images to be released
+    # GITHUB_TOKEN is read-only in the pull requests from forks, so the comment cannot be created.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      # Put this marker in the comment to find and update it in the following runs.
+      MARKER: "<!-- jre-ci-images-to-be-released -->"
+
+    steps:
+      - name: Check out codes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create the comment
+        id: body
+        run: |
+          # `<directory> <image name>`. The image names must be the same as the ones that the
+          # release workflows (jre*-release.yaml) pass to jre-release-reusable.yaml.
+          images="
+          jre/21 jre21
+          jre/25 jre25
+          jre-ubi/21 jre21-ubi
+          jre-ubi/25 jre25-ubi
+          "
+
+          changed_files=$(gh pr diff "${PR_NUMBER}" --name-only)
+
+          failed=false
+          {
+            echo "${MARKER}"
+            echo "### Images to be released"
+            echo
+            echo "Merging this pull request releases the images of the directories that it changes."
+            echo "\`<YYYYMMDDhhmm>\` is replaced with the build time (UTC) of the release."
+            echo
+            echo "| Directory | Image | Released by this pull request |"
+            echo "| --- | --- | --- |"
+            while read -r directory image_name; do
+              [[ -z "${directory}" ]] && continue
+
+              if jre_version=$(bash ci/get_jre_version.sh "${directory}"); then
+                image="\`ghcr.io/scalar-labs/${image_name}:${jre_version}.<YYYYMMDDhhmm>\`"
+              else
+                image="Failed to get the JRE version. See the log of this workflow."
+                failed=true
+              fi
+
+              if grep -q "^${directory}/" <<<"${changed_files}"; then
+                released="Yes"
+              else
+                released="No"
+              fi
+
+              echo "| \`${directory}\` | ${image} | ${released} |"
+            done <<<"${images}"
+          } > "${RUNNER_TEMP}/comment.md"
+
+          cat "${RUNNER_TEMP}/comment.md"
+          echo "failed=${failed}" >> "${GITHUB_OUTPUT}"
+
+      # Update the existing comment instead of adding a new one every time the CI runs.
+      - name: Create or update the comment in the pull request
+        run: |
+          comment_id=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" | head -n 1)
+
+          if [[ -n "${comment_id}" ]]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
+              -F "body=@${RUNNER_TEMP}/comment.md" --silent
+          else
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              -F "body=@${RUNNER_TEMP}/comment.md" --silent
+          fi
+
+      - name: Fail if the JRE version cannot be taken from a Dockerfile
+        if: steps.body.outputs.failed == 'true'
+        run: exit 1

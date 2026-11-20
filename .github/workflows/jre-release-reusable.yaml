@@ -1,0 +1,116 @@
+name: Build and push a JRE base image
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        description: "Image name without the registry and the owner (e.g., jre21 or jre21-ubi)"
+        required: true
+        type: string
+      context:
+        description: "Path of the directory that includes the Dockerfile (e.g., ./jre/21)"
+        required: true
+        type: string
+    secrets:
+      CR_PAT:
+        required: true
+
+# Do not build the same image in parallel.
+concurrency:
+  group: release-${{ inputs.image-name }}-${{ inputs.context }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_NAME: ${{ inputs.image-name }}
+  IMAGE: ghcr.io/scalar-labs/${{ inputs.image-name }}
+  CONTEXT: ${{ inputs.context }}
+
+jobs:
+  release:
+    # Release only from the main branch, even if the caller workflow is run manually.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out codes
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # A re-run of an old workflow run checks out the old commit, but the build time in the image
+      # tag is the time of the re-run. To avoid releasing old contents with a new tag, stop the
+      # release if the contents of the context directory differ from the head of the main branch.
+      - name: Check that the contents are the same as the head of the main branch
+        run: |
+          git fetch --depth=1 origin main
+          if ! git diff --quiet HEAD FETCH_HEAD -- "${CONTEXT}"; then
+            echo "::error::${CONTEXT} at ${GITHUB_SHA} differs from the head of the main branch. Run the caller workflow manually on the main branch to release the latest contents."
+            exit 1
+          fi
+
+      # The image tag is `<JRE version>.<build time>`, for example `21.0.13_9.202611120130`.
+      # - The JRE version comes from the Dockerfile (see ci/get_jre_version.sh). The CI
+      #   (jre-ci.yaml) runs the same script in pull requests.
+      # - The build time is `YYYYMMDDhhmm` in UTC. It includes the time so that multiple releases on
+      #   the same day do not overwrite the tag. Keep it a fixed-width number because Dependabot
+      #   compares it as a number.
+      # Dependabot can compare tags in this format, so the repositories that use this image can
+      # pin the tag with the digest and update them by Dependabot.
+      - name: Decide the image version
+        id: version
+        run: |
+          jre_version=$(bash ci/get_jre_version.sh "${CONTEXT}")
+          build_time=$(date -u +%Y%m%d%H%M)
+          {
+            echo "jre-version=${jre_version}"
+            echo "build-time=${build_time}"
+            echo "tag=${jre_version}.${build_time}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # This step assumes that a person merges the pull requests, including the ones created by
+      # Dependabot. If Dependabot itself merges a pull request (e.g., `@dependabot merge` or
+      # auto-merge enabled by Dependabot), the actor of the push event is `dependabot[bot]`. Such
+      # a run gets the Dependabot secrets instead of the Actions secrets, so `CR_PAT` is empty and
+      # the login fails. Reconsider how to pass the credential (e.g., register `CR_PAT` as a
+      # Dependabot secret) before changing the operation to let Dependabot merge.
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
+      # Do not push the `latest` tag. Dependabot treats the tags that are newer than `latest` as
+      # pre-releases, so it would ignore new tags if `latest` were not updated for some reason.
+      - name: Build and push the image
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ env.CONTEXT }}
+          push: true
+          tags: ${{ env.IMAGE }}:${{ steps.version.outputs.tag }}
+          build-args: |
+            IMAGE_NAME=${{ env.IMAGE_NAME }}
+            IMAGE_VERSION=${{ steps.version.outputs.jre-version }}
+            IMAGE_RELEASE=${{ steps.version.outputs.build-time }}
+          platforms: linux/amd64,linux/arm64/v8
+
+      - name: Show the released image
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          {
+            echo "### Released image"
+            echo ""
+            echo '```dockerfile'
+            echo "FROM ${IMAGE}:${TAG}@${DIGEST}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
