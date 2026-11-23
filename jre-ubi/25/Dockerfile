@@ -1,6 +1,6 @@
 # You can see sha256 hash in the following page:
 # - https://catalog.redhat.com/en/software/containers/ubi10/ubi-minimal/66f1504a379b9c2cf23e145c
-FROM registry.access.redhat.com/ubi10/ubi-minimal:1795002888@sha256:45b15b88980995a4939b33dfbdfdb2a5998198d478947ee1e1477d08425a1f25
+FROM registry.access.redhat.com/ubi10/ubi-minimal:1795197047@sha256:d63890a635f8f19177bce1775f74f587a47f4456844f1392456c4e3673a48753
 
 RUN microdnf update -y \
  && microdnf install java-25-openjdk-headless-1:25.0.5.1.2-1.1.el10 shadow-utils-4.15.0-13.el10 --setopt=install_weak_deps=0 --nodocs -y \
