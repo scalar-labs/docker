@@ -51,7 +51,7 @@ jobs:
 
       # The image tag is `<JRE version>.<build time>`, for example `21.0.13_9.202611120130`.
       # - The JRE version comes from the Dockerfile (see ci/get_jre_version.sh). The CI
-      #   (jre-ci.yaml) runs the same script in pull requests.
+      #   (jre-ci-reusable.yaml and jre-ci.yaml) runs the same script in pull requests.
       # - The build time is `YYYYMMDDhhmm` in UTC. It includes the time so that multiple releases on
       #   the same day do not overwrite the tag. Keep it a fixed-width number because Dependabot
       #   compares it as a number.

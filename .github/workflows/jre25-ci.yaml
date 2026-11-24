@@ -1,0 +1,25 @@
+name: CI for the Temurin based JRE 25 image
+
+# Run only when the pull request changes the files related to this image. The files shared by all
+# the JRE images are also listed so that a change to them is checked with every image.
+on:
+  pull_request:
+    paths:
+      - jre/25/**
+      - ci/get_jre_version.sh
+      - .github/workflows/jre-ci-reusable.yaml
+      - .github/workflows/jre25-ci.yaml
+
+permissions:
+  contents: read
+
+# Cancel the old run of the same pull request.
+concurrency:
+  group: jre25-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/jre-ci-reusable.yaml
+    with:
+      context: ./jre/25
