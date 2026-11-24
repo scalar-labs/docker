@@ -9,9 +9,9 @@
 # the Java major version (e.g., jre/21 or jre-ubi/21).
 #
 # The release workflow (.github/workflows/jre-release-reusable.yaml) uses this
-# script to decide the image tag. The CI (.github/workflows/jre-ci.yaml) also
-# runs it in pull requests so that a Dockerfile from which the version cannot
-# be taken is found before the merge.
+# script to decide the image tag. The CI (.github/workflows/jre-ci-reusable.yaml
+# and jre-ci.yaml) also runs it in pull requests so that a Dockerfile from which
+# the version cannot be taken is found before the merge.
 
 set -e -o pipefail; [[ -n "$DEBUG" ]] && set -x
 

@@ -5,7 +5,8 @@ name: Update the packages pinned in the UBI based images
 #
 # The branch is pushed and the pull request is created with a PAT (GH_PR_PAT) instead of
 # GITHUB_TOKEN, because the events caused by GITHUB_TOKEN do not trigger other workflows. With the
-# PAT, the CI (jre-ci.yaml) runs in the pull request as it does in the ones of Dependabot.
+# PAT, the CI (jre-ci.yaml, jre<version>-ci.yaml, and jre<version>-ubi-ci.yaml) runs in the pull
+# request as it does in the ones of Dependabot.
 
 on:
   schedule:

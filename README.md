@@ -57,7 +57,7 @@ The repositories that use the images rely on Dependabot to compare the tags, so 
 1. A pull request that updates a Dockerfile is created automatically every Monday at 09:00 JST.
    - Dependabot updates the tag and the digest of the base images ([.github/dependabot.yml](./.github/dependabot.yml)).
    - The `update-ubi-packages` workflow updates the RPM packages pinned in `jre-ubi/*/Dockerfile`, because Dependabot cannot detect them ([.github/workflows/update-ubi-packages.yaml](./.github/workflows/update-ubi-packages.yaml)).
-2. The CI builds the images in the pull request and comments the images that will be released ([.github/workflows/jre-ci.yaml](./.github/workflows/jre-ci.yaml)).
+2. The CI builds the images that the pull request changes (`.github/workflows/jre<version>-ci.yaml` and `.github/workflows/jre<version>-ubi-ci.yaml`, which call [jre-ci-reusable.yaml](./.github/workflows/jre-ci-reusable.yaml)) and comments the images that will be released ([.github/workflows/jre-ci.yaml](./.github/workflows/jre-ci.yaml)).
 3. A maintainer merges the pull request.
 4. The release workflow of each changed directory builds the image and pushes it to `ghcr.io` (`.github/workflows/jre*-release.yaml`, which call [jre-release-reusable.yaml](./.github/workflows/jre-release-reusable.yaml)).
 5. The maintainer checks that the release workflow has succeeded. Nothing notifies a failed release except the notification of GitHub Actions itself.
@@ -84,12 +84,20 @@ Update the following manually.
 
 ### What the CI checks
 
-`jre-ci.yaml` runs in the pull requests that change a JRE image directory, `ci/get_jre_version.sh`, or `jre-ci.yaml` itself.
+The CI consists of the following workflows.
 
-- It checks all four images in every run, not only the changed one. A pull request fails if another image cannot be built.
-- It checks that the JRE version can be taken from each Dockerfile and that each image can be built for `linux/amd64` and `linux/arm64`. It does not run the images, so it does not check that the JRE works.
-- It comments the images and the tags that will be released, and updates the same comment in the following runs. It does not comment in the pull requests from forks.
-- It does not run for a change only in the release workflows, `update-ubi-packages.yaml`, or `ci/update_ubi_packages.sh`. Those changes are used for the first time after the merge.
+- **The workflow of each image** (`jre21-ci.yaml`, `jre25-ci.yaml`, `jre21-ubi-ci.yaml`, and `jre25-ubi-ci.yaml`, which call `jre-ci-reusable.yaml`) builds the image.
+  - It runs only in the pull requests that change the directory of the image (for example, `jre/21/**`), so the images that the pull request does not change are not built.
+  - It also runs in the pull requests that change `ci/get_jre_version.sh`, `jre-ci-reusable.yaml`, or the workflow itself. A change to the shared files (`ci/get_jre_version.sh` and `jre-ci-reusable.yaml`) therefore builds all four images.
+  - It checks that the JRE version can be taken from the Dockerfile and that the image can be built for `linux/amd64` and `linux/arm64`. It does not run the image, so it does not check that the JRE works.
+- **`jre-ci.yaml`** comments the images and the tags that will be released, and updates the same comment in the following runs.
+  - It runs in the pull requests that change a JRE image directory, `ci/get_jre_version.sh`, or `jre-ci.yaml` itself.
+  - The comment lists all four images. The job fails if the JRE version cannot be taken from one of the Dockerfiles, including the ones that the pull request does not change.
+  - It does not comment in the pull requests from forks.
+
+The CI does not run for a change only in the release workflows, `update-ubi-packages.yaml`, or `ci/update_ubi_packages.sh`. Those changes are used for the first time after the merge.
+
+A workflow that does not run reports no check in the pull request. Do not set the checks of the CI workflows, that is, the workflow of each image and `jre-ci.yaml`, as required status checks of the branch protection. All of them run only for the paths above, and the `comment` job of `jre-ci.yaml` is also skipped in the pull requests from forks. A required check that is not reported stays pending and blocks the merge.
 
 ### What a maintainer does every week
 
@@ -172,11 +180,12 @@ Update all of the following. Nothing detects a missing one.
 
 1. Add `jre/<version>/Dockerfile` and `jre-ubi/<version>/Dockerfile`.
 2. Add the release workflows `.github/workflows/jre<version>-release.yaml` and `.github/workflows/jre<version>-ubi-release.yaml`.
-3. In `.github/workflows/jre-ci.yaml`, add the directories to `on.pull_request.paths`, to the matrix of the `build` job, and to the `images` list of the `comment` job.
-4. In `.github/workflows/jre-vuln-check.yaml`, add the images to `images` and to `docker-build-command`.
-5. In `.github/workflows/update-ubi-packages.yaml`, add the Java version to the matrix.
-6. In `.github/dependabot.yml`, add the directories to `directories`.
-7. In `.github/CODEOWNERS`, add the directories.
+3. Add the CI workflows `.github/workflows/jre<version>-ci.yaml` and `.github/workflows/jre<version>-ubi-ci.yaml`.
+4. In `.github/workflows/jre-ci.yaml`, add the directories to `on.pull_request.paths` and to the `images` list of the `comment` job.
+5. In `.github/workflows/jre-vuln-check.yaml`, add the images to `images` and to `docker-build-command`.
+6. In `.github/workflows/update-ubi-packages.yaml`, add the Java version to the matrix.
+7. In `.github/dependabot.yml`, add the directories to `directories`.
+8. In `.github/CODEOWNERS`, add the directories.
 
 The image name must be the same in the release workflow, `jre-ci.yaml`, and `jre-vuln-check.yaml`.
 
@@ -198,7 +207,7 @@ bash ci/get_jre_version.sh jre/21
 bash ci/update_ubi_packages.sh jre-ubi/21/Dockerfile
 ```
 
-The workflows cannot be run locally. `jre-ci.yaml` runs in pull requests, and the release workflows run only on the `main` branch.
+The workflows cannot be run locally. The CI workflows run in pull requests, and the release workflows run only on the `main` branch.
 
 ## Secrets
 
@@ -211,13 +220,13 @@ The workflows cannot be run locally. `jre-ci.yaml` runs in pull requests, and th
 - `CR_PAT` and `GH_PR_PAT` are secrets of the organization, not of this repository.
 - `CR_PAT` needs the permission to push the packages of `ghcr.io/scalar-labs`. `GH_PR_PAT` needs the permission to push branches and to create pull requests in this repository.
 - If a PAT expires or loses the permission, the workflows that use it fail. See [Troubleshooting](#troubleshooting).
-- `jre-ci.yaml` uses no secrets, so it also works in the pull requests of Dependabot.
+- The CI workflows (`jre-ci.yaml`, `jre<version>-ci.yaml`, and `jre<version>-ubi-ci.yaml`) use no secrets, so they also work in the pull requests of Dependabot.
 
 ## Troubleshooting
 
 - **The build of a UBI based image fails because a pinned package is not found.**
   The repositories of the base image remove the old versions of the packages, so the pinned version is no longer available. Run the `update-ubi-packages` workflow manually, or merge the pull request that it has already created. Until then, the following also fail.
-  - The CI of the other pull requests that change `jre-ubi/`, including the ones of Dependabot. Merge the pull request of the `update-ubi-packages` workflow first, and then update the other pull requests.
+  - The CI workflow of that image (for example, `jre21-ubi-ci.yaml`) in the other pull requests that run it, including the ones of Dependabot. These are the pull requests that change the directory of the image (for example, `jre-ubi/21/`), `ci/get_jre_version.sh`, `jre-ci-reusable.yaml`, or the workflow itself. The pull request of Dependabot that updates the actions is one of them, because it changes the workflows. The CI workflows of the other images are not affected. Merge the pull request of the `update-ubi-packages` workflow first, and then update the other pull requests.
   - The `jre-vuln-check` workflow. It scans none of the images if one of the builds fails, and it posts nothing to Slack.
 
   If the `update-ubi-packages` workflow reports that the package is up to date although the build fails, `sort -V` orders the available version before the pinned one. `ci/update_ubi_packages.sh` never lowers a version, so it creates no pull request. Change the pinned version in the Dockerfile manually to the available one that the log of the workflow shows.
@@ -269,7 +278,8 @@ Why code review is not enough: Dependabot is a service of GitHub. Which experime
 
 Why code review is not enough: The permissions of `GITHUB_TOKEN` in the pull requests of Dependabot depend on the settings of the repository and on how GitHub handles those pull requests. The comment is created with the API of GitHub, which was not called in the local check.
 
-- [ ] `jre-ci.yaml` runs in the pull requests of Dependabot, and the `build` job succeeds for the four images.
+- [ ] The CI workflow of each of the four images (`jre<version>-ci.yaml` and `jre<version>-ubi-ci.yaml`) runs in the pull requests of Dependabot that change its directory, and the `build` job succeeds.
+- [ ] A pull request that changes only one image directory runs only the CI workflow of that image, and a pull request that changes `ci/get_jre_version.sh` or `jre-ci-reusable.yaml` runs all four.
 - [ ] The `comment` job can create the comment in a pull request of Dependabot. It needs the `pull-requests: write` permission of `GITHUB_TOKEN`.
 - [ ] The `comment` job updates the existing comment in the second run instead of adding another one.
 - [ ] The image and the tag in the comment match the released ones except for the build time.
@@ -281,7 +291,7 @@ Why code review is not enough: The result depends on the permission of `GH_PR_PA
 - [ ] `GH_PR_PAT` can push the branch and create the pull request in this repository.
 - [ ] `ci/update_ubi_packages.sh` finds the latest versions. It assumes that `microdnf repoquery --available` prints each package as `<name>-[<epoch>:]<version>-<release>.<arch>`.
 - [ ] The workflow creates no pull request when all the packages are up to date. In particular, it does not create a pull request that only adds or removes the epoch, or that lowers a version.
-- [ ] `jre-ci.yaml` runs in the pull request that the workflow creates.
+- [ ] `jre-ci.yaml` and the CI workflow of the changed image (`jre<version>-ubi-ci.yaml`) run in the pull request that the workflow creates.
 - [ ] The workflow does not create another pull request, and does not push again, when the open pull request already proposes the same update.
 
 ### Vulnerability check
